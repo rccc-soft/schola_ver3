@@ -194,6 +194,11 @@ public class ExhibitEdit extends AppCompatActivity implements View.OnClickListen
             return;
         }
 
+        if (!validateInput()) {
+            Toast.makeText(this, "入力内容を確認してください", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         db.beginTransaction();
 
@@ -227,5 +232,52 @@ public class ExhibitEdit extends AppCompatActivity implements View.OnClickListen
             db.close();
         }
         finish();
+    }
+
+    private boolean containsSpecialChars(String input, String specialChars) {
+        for (char c : specialChars.toCharArray()) {
+            if (input.indexOf(c) != -1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean validateInput() {
+        boolean isValid = true;
+        String specialChars = "\"'\\;:[]{}";
+
+        String productName = productNameEditText.getText().toString();
+        String productDescription = productDescriptionEditText.getText().toString();
+        String productPrice = productPriceEditText.getText().toString();
+
+        if (productName.isEmpty() || productName.length() > 30) {
+            productNameEditText.setError("商品名は1〜30文字で入力してください");
+            isValid = false;
+        } else if (containsSpecialChars(productName, specialChars)) {
+            productNameEditText.setError("商品名に特殊文字は使用できません");
+            isValid = false;
+        }
+
+        if (productDescription.length() > 1000) {
+            productDescriptionEditText.setError("商品説明は1000文字以内で入力してください");
+            isValid = false;
+        } else if (containsSpecialChars(productDescription, specialChars)) {
+            productDescriptionEditText.setError("商品説明に特殊文字は使用できません");
+            isValid = false;
+        }
+
+        try {
+            int price = Integer.parseInt(productPrice);
+            if (price < 10 || price > 99999) {
+                productPriceEditText.setError("価格は10円から99999円の間で入力してください");
+                isValid = false;
+            }
+        } catch (NumberFormatException e) {
+            productPriceEditText.setError("有効な価格を入力してください");
+            isValid = false;
+        }
+
+        return isValid;
     }
 }

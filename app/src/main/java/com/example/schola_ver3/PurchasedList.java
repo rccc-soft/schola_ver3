@@ -20,18 +20,18 @@ import androidx.appcompat.app.AppCompatActivity;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class FavoriteList extends AppCompatActivity implements View.OnClickListener {
-    private static final String TAG = "FavoriteList";
+public class PurchasedList extends AppCompatActivity implements View.OnClickListener {
+    private static final String TAG = "PurchasedList";
     private DatabaseHelper dbHelper;
     private ProductDatabaseHelper productDbHelper;
 
-    private ImageView fav_homebtn, fav_searchbtn, fav_exhibitbtn, fav_favobtn, fav_mypagebtn;
+    private ImageView purchased_homebtn, purchased_searchbtn, purchased_exhibitbtn, purchased_favobtn, purchased_mypagebtn;
     private ImageButton backButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_favorite_list);
+        setContentView(R.layout.activity_purchased_list);
 
         initializeViews();
         setClickListeners();
@@ -39,76 +39,68 @@ public class FavoriteList extends AppCompatActivity implements View.OnClickListe
         dbHelper = new DatabaseHelper(this);
         productDbHelper = new ProductDatabaseHelper(this);
 
-        displayFavoriteProducts();
+        displayPurchasedProducts();
     }
 
     private void initializeViews() {
-        fav_homebtn = findViewById(R.id.fav_homebtn);
-        fav_searchbtn = findViewById(R.id.fav_searchbtn);
-        fav_exhibitbtn = findViewById(R.id.fav_exhibitbtn);
-        fav_favobtn = findViewById(R.id.fav_favobtn);
-        fav_mypagebtn = findViewById(R.id.fav_mypagebtn);
+        purchased_homebtn = findViewById(R.id.purchased_homebtn);
+        purchased_searchbtn = findViewById(R.id.purchased_searchbtn);
+        purchased_exhibitbtn = findViewById(R.id.purchased_exhibitbtn);
+        purchased_favobtn = findViewById(R.id.purchased_favobtn);
+        purchased_mypagebtn = findViewById(R.id.purchased_mypagebtn);
         backButton = findViewById(R.id.backButton);
     }
 
     private void setClickListeners() {
-        fav_homebtn.setOnClickListener(this);
-        fav_searchbtn.setOnClickListener(this);
-        fav_exhibitbtn.setOnClickListener(this);
-        fav_favobtn.setOnClickListener(this);
-        fav_mypagebtn.setOnClickListener(this);
+        purchased_homebtn.setOnClickListener(this);
+        purchased_searchbtn.setOnClickListener(this);
+        purchased_exhibitbtn.setOnClickListener(this);
+        purchased_favobtn.setOnClickListener(this);
+        purchased_mypagebtn.setOnClickListener(this);
         backButton.setOnClickListener(this);
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        displayFavoriteProducts();
-    }
-
-    private void displayFavoriteProducts() {
+    private void displayPurchasedProducts() {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         String userId = getCurrentUserId();
 
-        // お気に入りテーブルから商品IDを取得
-        Cursor favoritesCursor = db.rawQuery("SELECT " + DatabaseHelper.COLUMN_PRODUCT_ID +
-                " FROM " + DatabaseHelper.TABLE_FAVORITES +
-                " WHERE " + DatabaseHelper.COLUMN_FAVORITE_MEMBER_ID + " = ?", new String[]{userId});
+        // 購入テーブルから商品IDを取得
+        Cursor purchaseCursor = db.rawQuery("SELECT " + DatabaseHelper.COLUMN_ITEM_ID +
+                " FROM " + DatabaseHelper.TABLE_NAME +
+                " WHERE " + DatabaseHelper.COLUMN_BUYER_ID + " = ?", new String[]{userId});
 
-        ArrayList<String> favoriteProductIds = new ArrayList<>();
-        while (favoritesCursor.moveToNext()) {
-            favoriteProductIds.add(favoritesCursor.getString(favoritesCursor.getColumnIndex(DatabaseHelper.COLUMN_PRODUCT_ID)));
+        ArrayList<String> purchasedProductIds = new ArrayList<>();
+        while (purchaseCursor.moveToNext()) {
+            purchasedProductIds.add(purchaseCursor.getString(purchaseCursor.getColumnIndex(DatabaseHelper.COLUMN_ITEM_ID)));
         }
-        favoritesCursor.close();
+        purchaseCursor.close();
 
-        if (favoriteProductIds.isEmpty()) {
-            Toast.makeText(this, "お気に入りの商品がありません", Toast.LENGTH_SHORT).show();
+        if (purchasedProductIds.isEmpty()) {
+            Toast.makeText(this, "購入した商品がありません", Toast.LENGTH_SHORT).show();
             return;
         }
 
         ArrayList<HashMap<String, Object>> results = new ArrayList<>();
 
-        for (String productId : favoriteProductIds) {
-            if (!productDbHelper.isProductSold(productId)) {
-                Cursor productCursor = productDbHelper.getProductInfo(productId);
-                if (productCursor != null && productCursor.moveToFirst()) {
-                    HashMap<String, Object> item = new HashMap<>();
-                    item.put("商品ID", productId);
-                    item.put("商品名", productCursor.getString(productCursor.getColumnIndex("商品名")));
-                    item.put("金額", productCursor.getString(productCursor.getColumnIndex("金額")));
-                    item.put("商品説明", productCursor.getString(productCursor.getColumnIndex("商品説明")));
-                    item.put("カテゴリ", productCursor.getString(productCursor.getColumnIndex("カテゴリ")));
-                    item.put("配送方法", productCursor.getString(productCursor.getColumnIndex("配送方法")));
-                    item.put("地域", productCursor.getString(productCursor.getColumnIndex("地域")));
-                    item.put("商品画像", productCursor.getBlob(productCursor.getColumnIndex("商品画像")));
-                    results.add(item);
-                    productCursor.close();
-                }
+        for (String productId : purchasedProductIds) {
+            Cursor productCursor = productDbHelper.getProductInfo(productId);
+            if (productCursor != null && productCursor.moveToFirst()) {
+                HashMap<String, Object> item = new HashMap<>();
+                item.put("商品ID", productId);
+                item.put("商品名", productCursor.getString(productCursor.getColumnIndex("商品名")));
+                item.put("金額", productCursor.getString(productCursor.getColumnIndex("金額")));
+                item.put("商品説明", productCursor.getString(productCursor.getColumnIndex("商品説明")));
+                item.put("カテゴリ", productCursor.getString(productCursor.getColumnIndex("カテゴリ")));
+                item.put("配送方法", productCursor.getString(productCursor.getColumnIndex("配送方法")));
+                item.put("地域", productCursor.getString(productCursor.getColumnIndex("地域")));
+                item.put("商品画像", productCursor.getBlob(productCursor.getColumnIndex("商品画像")));
+                results.add(item);
+                productCursor.close();
             }
         }
 
         if (results.isEmpty()) {
-            Toast.makeText(this, "表示可能なお気に入りの商品がありません", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "購入した商品情報を取得できませんでした", Toast.LENGTH_SHORT).show();
         } else {
             displayProductsInGrid(results);
         }
@@ -128,7 +120,7 @@ public class FavoriteList extends AppCompatActivity implements View.OnClickListe
             }
 
             HashMap<String, Object> product = products.get(i);
-            View productView = getLayoutInflater().inflate(R.layout.favorite_list_item, null);
+            View productView = getLayoutInflater().inflate(R.layout.purchased_list_item, null);
 
             ImageView imageView = productView.findViewById(R.id.productImageView);
             TextView nameTextView = productView.findViewById(R.id.productNameTextView);
@@ -187,15 +179,15 @@ public class FavoriteList extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View v) {
         Intent intent = null;
-        if (v.getId() == R.id.fav_homebtn) {
+        if (v.getId() == R.id.purchased_homebtn) {
             intent = new Intent(getApplication(), HomePage.class);
-        } else if (v.getId() == R.id.fav_searchbtn) {
+        } else if (v.getId() == R.id.purchased_searchbtn) {
             intent = new Intent(getApplication(), ProductSearch.class);
-        } else if (v.getId() == R.id.fav_exhibitbtn) {
+        } else if (v.getId() == R.id.purchased_exhibitbtn) {
             intent = new Intent(getApplication(), Exhibit.class);
-        } else if (v.getId() == R.id.fav_favobtn) {
-
-        } else if (v.getId() == R.id.fav_mypagebtn) {
+        } else if (v.getId() == R.id.purchased_favobtn) {
+            intent = new Intent(getApplication(), FavoriteList.class);
+        } else if (v.getId() == R.id.purchased_mypagebtn) {
             intent = new Intent(getApplication(), MyPage.class);
         } else if (v.getId() == R.id.backButton) {
             finish();

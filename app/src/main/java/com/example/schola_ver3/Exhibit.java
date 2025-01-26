@@ -4,11 +4,13 @@ import android.content.ContentValues;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteStatement;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -28,6 +30,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -46,6 +49,8 @@ public class Exhibit extends AppCompatActivity implements View.OnClickListener {
     private ProductDatabaseHelper dbHelper;
     private byte[] imageByteArray; // 画像データを保持
     private ImageButton backButton;
+
+    String fileName = "Image_" + System.currentTimeMillis() + ".jpg";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,10 +103,12 @@ public class Exhibit extends AppCompatActivity implements View.OnClickListener {
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == RESULT_OK) {
+
+
                         saveProductToDatabase();
                         navigateToExhibitSuccess();
                     } else if (result.getResultCode() == RESULT_CANCELED) {
-                        navigateToHomePage();
+//                        navigateToHomePage();
                     }
                 }
         );
@@ -177,8 +184,31 @@ public class Exhibit extends AppCompatActivity implements View.OnClickListener {
             // 画像が選択されていない場合のエラー処理
             return false;
         }
+        // 特殊文字のチェック
+        String specialChars = "\"'\\;:[]{}";
+        String productName = productNameEditText.getText().toString();
+        String productDescription = productDescriptionEditText.getText().toString();
+
+        if (containsSpecialChars(productName, specialChars)) {
+            productNameEditText.setError("商品名に特殊文字は使用できません");
+            isValid = false;
+        }
+
+        if (containsSpecialChars(productDescription, specialChars)) {
+            productDescriptionEditText.setError("商品説明に特殊文字は使用できません");
+            isValid = false;
+        }
 
         return isValid;
+    }
+
+    private boolean containsSpecialChars(String input, String specialChars) {
+        for (char c : specialChars.toCharArray()) {
+            if (input.indexOf(c) != -1) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void navigateToExhibitSave() {
@@ -196,8 +226,24 @@ public class Exhibit extends AppCompatActivity implements View.OnClickListener {
 
         // 画像の URI を追加
         if (imageByteArray != null) {
-            Uri imageUri = Uri.parse(MediaStore.Images.Media.insertImage(getContentResolver(), BitmapFactory.decodeByteArray(imageByteArray, 0, imageByteArray.length), null, null));
-            intent.putExtra("productImageUri", imageUri.toString());
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Images.Media.DISPLAY_NAME, fileName);
+            values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+            values.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/YourAppName");
+
+            Uri imageUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+
+            if (imageUri != null) {
+                try (OutputStream os = getContentResolver().openOutputStream(imageUri)) {
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(imageByteArray, 0, imageByteArray.length);
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, os);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                intent.putExtra("productImageUri", imageUri.toString());
+            } else {
+                Log.e("Exhibit", "Failed to create new MediaStore record.");
+            }
         }
 
         resultLauncher.launch(intent);
@@ -205,23 +251,24 @@ public class Exhibit extends AppCompatActivity implements View.OnClickListener {
 
     private void saveProductToDatabase() {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        ContentValues values = new ContentValues();
 
-        String productId = generateUniqueProductId();
-        values.put("商品ID", productId);
-        values.put("商品名", productNameEditText.getText().toString());
-        values.put("商品説明", productDescriptionEditText.getText().toString());
-        values.put("商品画像", imageByteArray); // 画像データを保存する場合
-        values.put("商品URL", ""); // 仮の実装。実際のURLの生成ロジックが必要
-        values.put("カテゴリ", categorySpinner.getSelectedItem().toString());
-        values.put("金額", Integer.parseInt(productPriceEditText.getText().toString()));
-        values.put("配送方法", deliveryMethodSpinner.getSelectedItem().toString());
-        values.put("出品日時", new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date()));
-        values.put("地域", regionSpinner.getSelectedItemPosition() + 1); // 地域を保存する場合
-        values.put("出品者ID", getCurrentUserId());
-        values.put("購入済み", false);
+        String sql = "INSERT INTO 商品テーブル (商品ID, 商品名, 商品説明, 商品画像, 商品URL, カテゴリ, 金額, 配送方法, 出品日時, 地域, 出品者ID, 購入済み) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        SQLiteStatement statement = db.compileStatement(sql);
 
-        db.insert("商品テーブル", null, values);
+        statement.bindString(1, generateUniqueProductId());
+        statement.bindString(2, productNameEditText.getText().toString());
+        statement.bindString(3, productDescriptionEditText.getText().toString());
+        statement.bindBlob(4, imageByteArray);
+        statement.bindString(5, ""); // 商品URL
+        statement.bindString(6, categorySpinner.getSelectedItem().toString());
+        statement.bindLong(7, Long.parseLong(productPriceEditText.getText().toString()));
+        statement.bindString(8, deliveryMethodSpinner.getSelectedItem().toString());
+        statement.bindString(9, new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date()));
+        statement.bindLong(10, regionSpinner.getSelectedItemPosition() + 1);
+        statement.bindString(11, getCurrentUserId());
+        statement.bindLong(12, 0); // 購入済みフラグ（false = 0）
+
+        statement.executeInsert();
     }
 
     private String generateUniqueProductId() {

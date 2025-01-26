@@ -7,6 +7,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.EditText;
@@ -22,10 +23,12 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class SearchResult extends AppCompatActivity implements View.OnClickListener {
     private ListView resultsListView;
     private ProductDatabaseHelper dbHelper;
+    private DatabaseHelper databaseHelper;
     private EditText editTextText;
     private ImageButton backButton;
 
@@ -39,6 +42,7 @@ public class SearchResult extends AppCompatActivity implements View.OnClickListe
         editTextText.setOnClickListener(this);
 
         dbHelper = new ProductDatabaseHelper(this);
+        databaseHelper = new DatabaseHelper(this);
         resultsListView = findViewById(R.id.resultsListView);
 
         backButton = findViewById(R.id.backButton);
@@ -66,15 +70,39 @@ public class SearchResult extends AppCompatActivity implements View.OnClickListe
                 "商品ID", "商品名", "商品説明", "商品画像", "カテゴリ", "金額", "配送方法", "出品日時", "地域", "出品者ID"
         };
 
-        // 現在のユーザーIDを取得
         String currentUserId = getCurrentUserId();
+        Log.d("SearchResult", "currentUserId: " + currentUserId);
+        String selection;
+        String[] selectionArgs;
 
-        // 出品者IDが現在のユーザーIDと一致しない条件を追加
-        String selection = "商品名 LIKE ? AND 出品者ID != ?";
-        String[] selectionArgs = {"%" + query + "%", currentUserId};
+        if (getIntent().hasExtra("SEARCH_TYPE")) {
+            String searchType = getIntent().getStringExtra("SEARCH_TYPE");
+            if (searchType.equals("SCHOOL")) {
+                String userSchool = getIntent().getStringExtra("USER_SCHOOL");
+                // DatabaseHelperからユーザーIDのリストを取得
+                List<String> userIds = databaseHelper.getUserIdsBySchool(userSchool);
+                // ProductDatabaseHelperで商品を検索
+                selection = "商品名 LIKE ? AND 出品者ID != ? AND 出品者ID IN (" + makePlaceholders(userIds.size()) + ")";
+                selectionArgs = new String[userIds.size() + 2];
+                selectionArgs[0] = "%" + query + "%";
+                selectionArgs[1] = currentUserId;
+                for (int i = 0; i < userIds.size(); i++) {
+                    selectionArgs[i + 2] = userIds.get(i);
+                }
+            } else if (searchType.equals("CATEGORY")) {
+                selection = "カテゴリ = ? AND 出品者ID != ?";
+                selectionArgs = new String[]{query, currentUserId};
+            } else {
+                selection = "商品名 LIKE ? AND 出品者ID != ?";
+                selectionArgs = new String[]{"%" + query + "%", currentUserId};
+            }
+        } else {
+            selection = "商品名 LIKE ? AND 出品者ID != ?";
+            selectionArgs = new String[]{"%" + query + "%", currentUserId};
+        }
 
         Cursor cursor = db.query(
-                "商品テーブル",
+                ProductDatabaseHelper.TABLE_NAME,
                 projection,
                 selection,
                 selectionArgs,
@@ -86,19 +114,22 @@ public class SearchResult extends AppCompatActivity implements View.OnClickListe
 
         ArrayList<HashMap<String, Object>> results = new ArrayList<>();
         while (cursor.moveToNext()) {
-            HashMap<String, Object> item = new HashMap<>();
-            for (String column : projection) {
-                if (column.equals("商品画像")) {
-                    item.put(column, cursor.getBlob(cursor.getColumnIndex(column)));
-                } else if (column.equals("金額")) {
-                    String price = cursor.getString(cursor.getColumnIndex(column));
-                    item.put(column, price); // 元の価格を保存
-                    item.put("表示用金額", "￥" + price); // 表示用に￥を追加
-                } else {
-                    item.put(column, cursor.getString(cursor.getColumnIndex(column)));
+            String productId = cursor.getString(cursor.getColumnIndex("商品ID"));
+            if (!dbHelper.isProductSold(productId)) {
+                HashMap<String, Object> item = new HashMap<>();
+                for (String column : projection) {
+                    if (column.equals("商品画像")) {
+                        item.put(column, cursor.getBlob(cursor.getColumnIndex(column)));
+                    } else if (column.equals("金額")) {
+                        String price = cursor.getString(cursor.getColumnIndex(column));
+                        item.put(column, price); // 元の価格を保存
+                        item.put("表示用金額", "￥" + price); // 表示用に￥を追加
+                    } else {
+                        item.put(column, cursor.getString(cursor.getColumnIndex(column)));
+                    }
                 }
+                results.add(item);
             }
-            results.add(item);
         }
         cursor.close();
 
@@ -137,7 +168,7 @@ public class SearchResult extends AppCompatActivity implements View.OnClickListe
         if (v.getId() == R.id.editTextText) {
             intent = new Intent(getApplication(), ProductSearch.class);
         } else if(v.getId() == R.id.backButton) {
-            intent = new Intent(getApplication(), ProductSearch.class);
+            finish();
         }
         if (intent != null) {
             startActivity(intent);
@@ -157,5 +188,18 @@ public class SearchResult extends AppCompatActivity implements View.OnClickListe
             }
         }
         startActivity(detailIntent);
+    }
+
+    private String makePlaceholders(int len) {
+        if (len < 1) {
+            throw new RuntimeException("No placeholders");
+        } else {
+            StringBuilder sb = new StringBuilder(len * 2 - 1);
+            sb.append("?");
+            for (int i = 1; i < len; i++) {
+                sb.append(",?");
+            }
+            return sb.toString();
+        }
     }
 }

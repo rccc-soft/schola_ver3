@@ -38,15 +38,22 @@ public class ExhibitDetails extends AppCompatActivity implements View.OnClickLis
 
         // Intent から productId を受け取る
         Intent intent = getIntent();
-        productId = intent.getStringExtra("product_id");
+        productId = intent.getStringExtra("商品ID");
 
-        // 購入IDの取得
-        purchaseId = dbHelper.getPurchaseIdByItemId(productId);
+        if (productId != null) {
+            // 購入IDの取得
+            purchaseId = dbHelper.getPurchaseIdByItemId(productId);
 
-        // 商品IDの存在確認と配送状況取得
-        itemExists = dbHelper.doesItemExist(productId);
-        if (itemExists) {
-            isShipped = dbHelper.isItemShipped(productId);
+            // 商品IDの存在確認と配送状況取得
+            itemExists = dbHelper.doesItemExist(productId);
+            if (itemExists) {
+                isShipped = dbHelper.isItemShipped(productId);
+            }
+        } else {
+            // productIdがnullの場合のエラー処理
+            Toast.makeText(this, "商品IDが見つかりません", Toast.LENGTH_SHORT).show();
+            finish(); // アクティビティを終了
+            return;
         }
 
         // UIの初期化
@@ -93,15 +100,31 @@ public class ExhibitDetails extends AppCompatActivity implements View.OnClickLis
             Intent nextIntent = new Intent(getApplication(), ExhibitList.class);
             startActivity(nextIntent);
         } else if (v.getId() == R.id.exhibitEditButton) {
-            // 出品編集画面へ
-            Intent nextIntent = new Intent(getApplication(), ExhibitEdit.class);
-            nextIntent.putExtra("product_id", productId); // 商品ID
-            startActivity(nextIntent);
+                // 出品編集画面へ
+                Intent nextIntent = new Intent(getApplication(), ExhibitEdit.class);
+                ProductDatabaseHelper productDbHelper = new ProductDatabaseHelper(this);
+                android.database.Cursor cursor = productDbHelper.getProductInfo(productId);
+
+                if (cursor != null && cursor.moveToFirst()) {
+                    nextIntent.putExtra("商品ID", productId);
+                    nextIntent.putExtra("商品名", cursor.getString(cursor.getColumnIndex(ProductDatabaseHelper.COLUMN_NAME)));
+                    nextIntent.putExtra("商品説明", cursor.getString(cursor.getColumnIndex(ProductDatabaseHelper.COLUMN_DESCRIPTION)));
+                    nextIntent.putExtra("金額", cursor.getString(cursor.getColumnIndex(ProductDatabaseHelper.COLUMN_PRICE)));
+                    nextIntent.putExtra("カテゴリ", cursor.getString(cursor.getColumnIndex(ProductDatabaseHelper.COLUMN_CATEGORY)));
+                    nextIntent.putExtra("配送方法", cursor.getString(cursor.getColumnIndex(ProductDatabaseHelper.COLUMN_DELIVERY)));
+                    nextIntent.putExtra("地域", cursor.getString(cursor.getColumnIndex(ProductDatabaseHelper.COLUMN_REGION)));
+                    nextIntent.putExtra("商品画像", cursor.getBlob(cursor.getColumnIndex(ProductDatabaseHelper.COLUMN_IMAGE)));
+                    cursor.close();
+                } else {
+                    Toast.makeText(this, "商品情報の取得に失敗しました", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                startActivity(nextIntent);
         } else if (v.getId() == R.id.chatListButton) {
             // チャット一覧画面へ
-            Intent nextIntent = new Intent(getApplication(), ChatList.class);
-            nextIntent.putExtra("product_id", productId); // 商品ID
-            startActivity(nextIntent);
+//            Intent nextIntent = new Intent(getApplication(), ChatList.class);
+//            nextIntent.putExtra("product_id", productId); // 商品ID
+//            startActivity(nextIntent);
         } else if (v.getId() == R.id.shippingButton) {
             if (!itemExists) {
                 Toast.makeText(this, "購入が完了していません", Toast.LENGTH_SHORT).show();

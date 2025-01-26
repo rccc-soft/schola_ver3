@@ -134,15 +134,15 @@ public class ExhibitList extends AppCompatActivity implements View.OnClickListen
 
             // 商品がクリックされたときの処理
             String productId = (String) product.get("商品ID");
-            productView.setOnClickListener(v -> navigateToExhibitEdit(product));
+            productView.setOnClickListener(v -> navigateToExhibitDetails(product));
 
             // 現在の行に商品ビューを追加
             currentRow.addView(productView);
         }
     }
 
-    private void navigateToExhibitEdit(HashMap<String, Object> item) {
-        Intent editIntent = new Intent(ExhibitList.this, ExhibitEdit.class);
+    private void navigateToExhibitDetails(HashMap<String, Object> item) {
+        Intent editIntent = new Intent(ExhibitList.this, ExhibitDetails.class);
 
         editIntent.putExtra("商品ID", (String) item.get("商品ID"));
         editIntent.putExtra("商品名", (String) item.get("商品名"));
@@ -154,7 +154,7 @@ public class ExhibitList extends AppCompatActivity implements View.OnClickListen
 
         editIntent.putExtra("商品画像", (byte[]) item.get("商品画像"));
 
-        Log.d(TAG, "Navigating to ExhibitEdit with Product ID: " + item.get("商品ID"));
+        Log.d(TAG, "Navigating to ExhibitDetail with Product ID: " + item.get("商品ID"));
 
         startActivity(editIntent);
     }
