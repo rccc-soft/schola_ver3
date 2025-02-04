@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFF4FF">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="10dp"
+            android:background="#FFFFFF">
+
+            <ImageButton
+                android:id="@+id/backButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@null"
+                android:scaleType="fitCenter"
+                app:srcCompat="@drawable/backbutton" />
+
+            <TextView
+                android:id="@+id/textView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:hint="検索結果"
+                android:textColor="#000000"
+                android:textSize="30sp" />
+        </LinearLayout>
+
+        <EditText
+            android:id="@+id/editTextText"
+            android:layout_width="match_parent"
+            android:layout_height="59dp"
+            android:layout_margin="16dp"
+            android:background="@drawable/edittexy_background"
+            android:drawableStart="?android:attr/actionModeWebSearchDrawable"
+            android:ems="10"
+            android:inputType="text"
+            android:hint=" search for ..."
+            android:padding="8dp" />
+
+        <ListView
+            android:id="@+id/resultsListView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            android:background="#FFFFFF"
+            android:elevation="4dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000"
+        android:gravity="center">
+
+        <!-- 中央カードビュー -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="8dp"
+            app:cardBackgroundColor="#FFFFFF"
+            android:padding="24dp">
+
+            <LinearLayout
+                android:layout_width="309dp"
+                android:layout_height="178dp"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <!-- 商品購入 CheckBox -->
+                <CheckBox
+                    android:id="@+id/buyButton"
+                    android:layout_width="225dp"
+                    android:layout_height="30dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="5dp"
+                    android:background="@drawable/buy_background"
+                    android:text="商品購入"
+                    android:textColor="#79747E"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:paddingLeft="30dp" />
+
+                <!-- 商品出品 CheckBox -->
+                <CheckBox
+                    android:id="@+id/productButton"
+                    android:layout_width="225dp"
+                    android:layout_height="30dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="5dp"
+                    android:background="@drawable/buy_background"
+                    android:text="商品出品"
+                    android:textColor="#79747E"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:paddingLeft="30dp" />
+
+                <!-- チャット CheckBox -->
+                <CheckBox
+                    android:id="@+id/chatButton"
+                    android:layout_width="225dp"
+                    android:layout_height="30dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="5dp"
+                    android:background="@drawable/buy_background"
+                    android:text="チャット"
+                    android:textColor="#79747E"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:paddingLeft="30dp" />
+
+                <!-- ボタン配置 -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <!-- キャンセルボタン -->
+                    <Button
+                        android:id="@+id/cancelButton"
+                        android:layout_width="130dp"
+                        android:layout_height="50dp"
+                        android:layout_marginEnd="8dp"
+                        android:backgroundTint="#CCCCCC"
+                        android:text="戻る"
+                        android:textColor="#FFFFFF"
+                        android:textSize="16sp" />
+
+                    <!-- 確定ボタン -->
+                    <Button
+                        android:id="@+id/decideButton"
+                        android:layout_width="130dp"
+                        android:layout_height="50dp"
+                        android:layout_marginStart="8dp"
+                        android:backgroundTint="#4CAF50"
+                        android:text="確定"
+                        android:textColor="#FFFFFF"
+                        android:textSize="16sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+    </LinearLayout>
+
+</FrameLayout>
