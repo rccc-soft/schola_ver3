@@ -96,4 +96,10 @@ public class ProductDatabaseHelper extends SQLiteOpenHelper {
         cursor.close();
         return sellerId;
     }
+
+    public Cursor searchProducts(String query) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        return db.rawQuery("SELECT product_name FROM products WHERE product_name LIKE ?", new String[]{"%" + query + "%"});
+    }
+
 }

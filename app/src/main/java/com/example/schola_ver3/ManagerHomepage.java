@@ -33,7 +33,7 @@ public class ManagerHomepage extends AppCompatActivity {
         productBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(ManagerHomepage.this, UserInformation.class);
+                Intent intent = new Intent(ManagerHomepage.this, ManagerProductSearch.class);
                 startActivity(intent);
             }
         });
